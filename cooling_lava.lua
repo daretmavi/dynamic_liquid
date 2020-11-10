@@ -57,7 +57,8 @@ local dynamic_lava_flowing_destroys = {
 	"default:water_flowing",
 	"default:river_water_flowing",
 	"default:snow",
-	"default:snowblock"
+	"default:snowblock",
+	"bucket:bucket_water_flowing"
 }
 
 local all_flowing_nodes = {unpack(dynamic_cools_lava_flowing)}
@@ -71,7 +72,7 @@ local cool_lava_flowing = function(pos, node)
 	if cooler_adjacent ~= nil then
 		-- pulling nearby sources into position is necessary to break certain classes of
 		-- flow "deadlock". Weird, but what're you gonna do.
-		local nearby_source = minetest.find_node_near(pos, 1, "default:lava_source")
+		local nearby_source = minetest.find_node_near(pos, 1, {"default:lava_source", "bucket:bucket_lava_source"})
 		if nearby_source then
 			minetest.set_node(pos, {name="default:lava_source"})
 			minetest.set_node(nearby_source, {name="air"})
@@ -98,7 +99,7 @@ end
 
 minetest.register_abm({
 	label = "Lava flowing cooling",
-	nodenames = {"default:lava_flowing"},
+	nodenames = {"default:lava_flowing", "bucket:bucket_lava_flowing"},
 	neighbors = all_flowing_nodes,
 	interval = 1,
 	chance = 1,
@@ -114,7 +115,7 @@ local dynamic_cools_lava_source = {"group:dynamic_cools_lava_source"}
 for name, node_def in pairs(minetest.registered_nodes) do
 	-- We don't want "flowing" nodes to cool lava source blocks, otherwise when water falls onto a large pool of lava there's
 	-- way too many blocks turned to obsidian.
-	if minetest.get_item_group(name, "cools_lava") > 0 and name ~= "default:water_flowing" and name ~= "default:river_water_flowing" then
+	if minetest.get_item_group(name, "cools_lava") > 0 and name ~= "default:water_flowing" and name ~= "default:river_water_flowing" and name ~= "bucket:bucket_water_flowing" then
 		table.insert(dynamic_cools_lava_source, name)
 	end
 end
@@ -128,7 +129,9 @@ local dynamic_lava_source_destroys = {
 	"default:river_water_flowing",
 	"default:ice",
 	"default:snow",
-	"default:snowblock"
+	"default:snowblock",
+	"bucket:bucket_water_source",
+	"bucket:bucket_water_flowing"
 }
 
 local all_source_nodes = {unpack(dynamic_cools_lava_source)}
@@ -213,7 +216,7 @@ end
 
 minetest.register_abm({
 	label = "Lava source cooling",
-	nodenames = {"default:lava_source"},
+	nodenames = {"default:lava_source", "bucket:bucket_lava_source"},
 	neighbors = all_source_nodes,
 	interval = 1,
 	chance = 1,
