@@ -57,8 +57,7 @@ local dynamic_lava_flowing_destroys = {
 	"default:water_flowing",
 	"default:river_water_flowing",
 	"default:snow",
-	"default:snowblock",
-	"bucket:bucket_water_flowing"
+	"default:snowblock"
 }
 
 local all_flowing_nodes = {unpack(dynamic_cools_lava_flowing)}
@@ -68,11 +67,11 @@ end
 
 local cool_lava_flowing = function(pos, node)
 	local cooler_adjacent = minetest.find_node_near(pos, 1, dynamic_cools_lava_flowing)
-	
+
 	if cooler_adjacent ~= nil then
 		-- pulling nearby sources into position is necessary to break certain classes of
 		-- flow "deadlock". Weird, but what're you gonna do.
-		local nearby_source = minetest.find_node_near(pos, 1, {"default:lava_source", "bucket:bucket_lava_source"})
+		local nearby_source = minetest.find_node_near(pos, 1, "default:lava_source")
 		if nearby_source then
 			minetest.set_node(pos, {name="default:lava_source"})
 			minetest.set_node(nearby_source, {name="air"})
@@ -82,7 +81,7 @@ local cool_lava_flowing = function(pos, node)
 			steam(pos)
 		end
 	end
-	
+
 	local evaporate_list = minetest.find_nodes_in_area(
 		vector.add(pos,{x=-1, y=-1, z=-1}),
 		vector.add(pos,{x=1, y=1, z=1}),
@@ -91,7 +90,7 @@ local cool_lava_flowing = function(pos, node)
 	for _, loc in pairs(evaporate_list) do
 		minetest.set_node(loc, {name="air"})
 		steam(loc)
-	end	
+	end
 
 	minetest.sound_play("default_cool_lava",
 		{pos = pos, max_hear_distance = 16, gain = 0.25})
@@ -99,7 +98,7 @@ end
 
 minetest.register_abm({
 	label = "Lava flowing cooling",
-	nodenames = {"default:lava_flowing", "bucket:bucket_lava_flowing"},
+	nodenames = {"default:lava_flowing"},
 	neighbors = all_flowing_nodes,
 	interval = 1,
 	chance = 1,
@@ -115,7 +114,7 @@ local dynamic_cools_lava_source = {"group:dynamic_cools_lava_source"}
 for name, node_def in pairs(minetest.registered_nodes) do
 	-- We don't want "flowing" nodes to cool lava source blocks, otherwise when water falls onto a large pool of lava there's
 	-- way too many blocks turned to obsidian.
-	if minetest.get_item_group(name, "cools_lava") > 0 and name ~= "default:water_flowing" and name ~= "default:river_water_flowing" and name ~= "bucket:bucket_water_flowing" then
+	if minetest.get_item_group(name, "cools_lava") > 0 and name ~= "default:water_flowing" and name ~= "default:river_water_flowing" then
 		table.insert(dynamic_cools_lava_source, name)
 	end
 end
@@ -129,9 +128,7 @@ local dynamic_lava_source_destroys = {
 	"default:river_water_flowing",
 	"default:ice",
 	"default:snow",
-	"default:snowblock",
-	"bucket:bucket_water_source",
-	"bucket:bucket_water_flowing"
+	"default:snowblock"
 }
 
 local all_source_nodes = {unpack(dynamic_cools_lava_source)}
@@ -150,7 +147,7 @@ local function shuffle_array(a)
     local rand = math.random
     local iterations = #a
     local j
-    
+
     for i = iterations, 2, -1 do
         j = rand(i)
         a[i], a[j] = a[j], a[i]
@@ -167,9 +164,9 @@ local cool_lava_source = function(pos, node)
 		vector.add(pos,{x=1, y=1, z=1}),
 		dynamic_lava_source_destroys
 	)
-	
+
 	shuffle_array(cooler_list)
-	
+
 	local obsidian_location = nil
 	for _, loc in pairs(cooler_list) do
 		if is_pos_in_list(loc, evaporate_list) then
@@ -182,17 +179,17 @@ local cool_lava_source = function(pos, node)
 				end
 			elseif loc.y == pos.y and obsidian_location == nil then
 				obsidian_location = loc -- On the same level as us, acceptable if nothing else comes along.
-			end			
+			end
 		end
 	end
 	if obsidian_location == nil and #cooler_list > 0 then
 		obsidian_location = pos -- there's an adjacent cooler node, but it's above us. Turn into obsidian in place.
 	end
-	
+
 	for _, loc in pairs(evaporate_list) do
 		minetest.set_node(loc, {name="air"})
 		steam(loc)
-	end	
+	end
 
 	if obsidian_location ~= nil then
 		minetest.set_node(pos, {name = "air"})
@@ -208,7 +205,7 @@ local cool_lava_source = function(pos, node)
 			minetest.set_node(loc, {name = "default:lava_source"})
 		end
 	end
-	
+
 	minetest.sound_play("default_cool_lava",
 		{pos = pos, max_hear_distance = 16, gain = 0.25})
 end
@@ -216,7 +213,7 @@ end
 
 minetest.register_abm({
 	label = "Lava source cooling",
-	nodenames = {"default:lava_source", "bucket:bucket_lava_source"},
+	nodenames = {"default:lava_source"},
 	neighbors = all_source_nodes,
 	interval = 1,
 	chance = 1,
@@ -225,3 +222,20 @@ minetest.register_abm({
 		cool_lava_source(...)
 	end,
 })
+
+-- new water types to work with lava cooling
+dynamic_liquid.add_to_water_nodes = function(new_source, new_flowing)
+	-- Flowing liquid
+	table.insert(dynamic_lava_flowing_destroys, new_flowing)
+	table.insert(dynamic_lava_source_destroys, new_flowing)
+
+	table.insert(all_flowing_nodes, new_flowing)
+	table.insert(all_source_nodes, new_flowing)
+
+	--Source liquid
+	table.insert(dynamic_lava_source_destroys, new_source)
+	table.insert(dynamic_cools_lava_flowing, new_source)
+	table.insert(dynamic_cools_lava_source, new_source)
+
+	table.insert(all_source_nodes, new_source)
+end
