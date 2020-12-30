@@ -67,7 +67,7 @@ end
 
 local cool_lava_flowing = function(pos, node)
 	local cooler_adjacent = minetest.find_node_near(pos, 1, dynamic_cools_lava_flowing)
-
+	
 	if cooler_adjacent ~= nil then
 		-- pulling nearby sources into position is necessary to break certain classes of
 		-- flow "deadlock". Weird, but what're you gonna do.
@@ -81,7 +81,7 @@ local cool_lava_flowing = function(pos, node)
 			steam(pos)
 		end
 	end
-
+	
 	local evaporate_list = minetest.find_nodes_in_area(
 		vector.add(pos,{x=-1, y=-1, z=-1}),
 		vector.add(pos,{x=1, y=1, z=1}),
@@ -90,7 +90,7 @@ local cool_lava_flowing = function(pos, node)
 	for _, loc in pairs(evaporate_list) do
 		minetest.set_node(loc, {name="air"})
 		steam(loc)
-	end
+	end	
 
 	minetest.sound_play("default_cool_lava",
 		{pos = pos, max_hear_distance = 16, gain = 0.25})
@@ -147,7 +147,7 @@ local function shuffle_array(a)
     local rand = math.random
     local iterations = #a
     local j
-
+    
     for i = iterations, 2, -1 do
         j = rand(i)
         a[i], a[j] = a[j], a[i]
@@ -164,9 +164,9 @@ local cool_lava_source = function(pos, node)
 		vector.add(pos,{x=1, y=1, z=1}),
 		dynamic_lava_source_destroys
 	)
-
+	
 	shuffle_array(cooler_list)
-
+	
 	local obsidian_location = nil
 	for _, loc in pairs(cooler_list) do
 		if is_pos_in_list(loc, evaporate_list) then
@@ -179,17 +179,17 @@ local cool_lava_source = function(pos, node)
 				end
 			elseif loc.y == pos.y and obsidian_location == nil then
 				obsidian_location = loc -- On the same level as us, acceptable if nothing else comes along.
-			end
+			end			
 		end
 	end
 	if obsidian_location == nil and #cooler_list > 0 then
 		obsidian_location = pos -- there's an adjacent cooler node, but it's above us. Turn into obsidian in place.
 	end
-
+	
 	for _, loc in pairs(evaporate_list) do
 		minetest.set_node(loc, {name="air"})
 		steam(loc)
-	end
+	end	
 
 	if obsidian_location ~= nil then
 		minetest.set_node(pos, {name = "air"})
@@ -205,7 +205,7 @@ local cool_lava_source = function(pos, node)
 			minetest.set_node(loc, {name = "default:lava_source"})
 		end
 	end
-
+	
 	minetest.sound_play("default_cool_lava",
 		{pos = pos, max_hear_distance = 16, gain = 0.25})
 end
